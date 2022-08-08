@@ -3,6 +3,8 @@ import torch
 from torch.utils import data
 import torchvision.transforms as transforms
 from PIL import Image
+from io import BytesIO
+import base64
 
 class Dataset(data.Dataset):
     'Characterizes a dataset for PyTorch'
@@ -33,6 +35,33 @@ class Dataset(data.Dataset):
                     if os.path.isfile(filename):
                         images.append(filename)
         return images
+
+class Dataset_base64(data.Dataset):
+    'Characterizes a dataset for PyTorch'
+
+    def __init__(self, path, transform=None):
+        'Initialization'
+        self.transform = transform
+        self.imgbase64 = []
+        with open(path, 'r') as fin:
+            lines = fin.readlines()
+            for line in lines:
+                data = line.strip().split('\t')
+                self.imgbase64.append(data[2])
+
+    def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.imgbase64)
+
+    def __getitem__(self, index):
+        'Generates one sample of data'
+        byte_data = base64.b64decode(self.imgbase64[index])
+        img_data = BytesIO(byte_data)
+        img = Image.open(img_data).convert('RGB')
+        # Convert image and label to torch tensors
+        if self.transform is not None:
+            img = self.transform(img)
+        return img
 
 
 if __name__ == '__main__':
